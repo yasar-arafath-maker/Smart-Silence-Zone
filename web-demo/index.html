@@ -1,0 +1,1811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Silent Zone - College Project Live Simulation Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #07090e;
+      --card-bg: rgba(18, 22, 36, 0.78);
+      --card-border: rgba(0, 229, 255, 0.22);
+      --neon-cyan: #00e5ff;
+      --neon-purple: #7c4dff;
+      --neon-green: #00e676;
+      --neon-amber: #ffab00;
+      --neon-red: #ff5252;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Top Bar */
+    header {
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      background: rgba(10, 13, 20, 0.85);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      font-size: 1.15rem;
+    }
+    .sim-tag {
+      background: rgba(255, 171, 0, 0.15);
+      border: 1px solid var(--neon-amber);
+      color: var(--neon-amber);
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 8px;
+      letter-spacing: 0.5px;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 390px 1fr;
+      gap: 24px;
+      padding: 24px;
+      max-width: 1680px;
+      margin: 0 auto;
+      width: 100%;
+      flex: 1;
+    }
+
+    @media (max-width: 1060px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+
+    .glass {
+      background: var(--card-bg);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+    }
+
+    /* PHONE FRAME MOCKUP (LEFT) */
+    .phone-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .phone-frame {
+      width: 380px;
+      height: 760px;
+      background: #0d111b;
+      border-radius: 46px;
+      border: 8px solid #1c2235;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.8), 0 0 40px rgba(0,229,255,0.15);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .phone-frame.emergency-flashing {
+      border-color: var(--neon-red);
+      animation: phoneEmergencyFlash 0.5s infinite alternate;
+    }
+    @keyframes phoneEmergencyFlash {
+      from { box-shadow: 0 0 30px rgba(255,82,82,0.4); background: #0d111b; }
+      to { box-shadow: 0 0 80px rgba(255,82,82,0.9); background: #380808; }
+    }
+
+    .phone-speaker-island {
+      width: 110px;
+      height: 24px;
+      background: #000;
+      border-radius: 20px;
+      margin: 10px auto 0 auto;
+      z-index: 50;
+    }
+
+    .phone-screen {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .phone-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .device-hero-card {
+      padding: 18px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(0,229,255,0.12), rgba(124,77,255,0.12));
+      border: 1px solid rgba(0,229,255,0.3);
+      margin-bottom: 14px;
+      transition: all 0.3s;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .badge-silent { background: rgba(124,77,255,0.25); color: var(--neon-purple); border: 1px solid var(--neon-purple); }
+    .badge-normal { background: rgba(0,230,118,0.25); color: var(--neon-green); border: 1px solid var(--neon-green); }
+    .badge-vibrate { background: rgba(0,229,255,0.25); color: var(--neon-cyan); border: 1px solid var(--neon-cyan); }
+    .badge-dnd { background: rgba(255,82,82,0.25); color: var(--neon-red); border: 1px solid var(--neon-red); }
+
+    /* Phone Incoming Call / SMS Simulation Layers */
+    .phone-overlay-card {
+      position: absolute;
+      inset: 12px;
+      background: rgba(13, 17, 27, 0.96);
+      backdrop-filter: blur(20px);
+      border-radius: 30px;
+      border: 2px solid var(--neon-cyan);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+      z-index: 80;
+      animation: fadeIn 0.25s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+    .sms-bubble {
+      background: rgba(0, 229, 255, 0.15);
+      border: 1px solid var(--neon-cyan);
+      padding: 12px 16px;
+      border-radius: 16px 16px 4px 16px;
+      margin: 10px 0;
+      font-size: 0.82rem;
+      line-height: 1.4;
+      text-align: left;
+    }
+
+    /* RIGHT CONTROL PANEL */
+    .control-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .panel-section {
+      padding: 20px;
+    }
+    .section-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    /* Watch Mockup */
+    .watch-mockup {
+      width: 140px;
+      height: 140px;
+      border-radius: 36px;
+      background: #111422;
+      border: 4px solid #232a42;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      text-align: center;
+      font-size: 0.72rem;
+      transition: all 0.2s;
+    }
+    .watch-vibrating {
+      animation: watchBuzz 0.2s infinite alternate;
+      border-color: var(--neon-cyan);
+    }
+    @keyframes watchBuzz {
+      0% { transform: translate(-2px, 2px) rotate(-1deg); }
+      100% { transform: translate(2px, -2px) rotate(1deg); }
+    }
+
+    /* Sliders & Inputs */
+    .slider-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+    input[type=range] {
+      width: 100%;
+      accent-color: var(--neon-cyan);
+    }
+    select, input[type=text] {
+      width: 100%;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      outline: none;
+    }
+    select option { background: #0d111b; color: #fff; }
+
+    /* Button utilities */
+    .btn {
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: none;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: var(--neon-cyan); color: #07090e; }
+    .btn-primary:hover { box-shadow: 0 0 20px rgba(0,229,255,0.5); }
+    .btn-danger { background: var(--neon-red); color: #fff; }
+    .btn-outline { background: transparent; border: 1px solid var(--neon-cyan); color: var(--neon-cyan); }
+    .btn-outline:hover { background: rgba(0,229,255,0.1); }
+
+    /* Heatmap Canvas */
+    #heatmapCanvas {
+      width: 100%;
+      height: 220px;
+      border-radius: 12px;
+      background: #090c14;
+    }
+
+    /* Log Panel */
+    .log-box {
+      max-height: 140px;
+      overflow-y: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 10px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 10px;
+    }
+    .log-item { color: var(--text-muted); }
+    /* Quiz & Live GPS Utilities */
+    .quiz-card {
+      background: linear-gradient(135deg, rgba(124, 77, 255, 0.1), rgba(0, 229, 255, 0.08));
+      border: 1px solid rgba(0, 229, 255, 0.3);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .quiz-choice-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 8px 0;
+    }
+    .quiz-choice-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--text-main);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .quiz-choice-btn:hover {
+      background: rgba(0, 229, 255, 0.15);
+      border-color: var(--neon-cyan);
+    }
+    .quiz-choice-btn.selected {
+      background: rgba(0, 229, 255, 0.25);
+      border-color: var(--neon-cyan);
+      color: #fff;
+      box-shadow: 0 0 14px rgba(0, 229, 255, 0.35);
+    }
+    .hud-chip {
+      background: rgba(0, 229, 255, 0.12);
+      border: 1px solid var(--neon-cyan);
+      color: var(--neon-cyan);
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .live-distance-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      margin-top: 6px;
+    }
+    .dist-inside { background: rgba(0, 230, 118, 0.2); border: 1px solid var(--neon-green); color: var(--neon-green); }
+    .dist-outside { background: rgba(255, 171, 0, 0.2); border: 1px solid var(--neon-amber); color: var(--neon-amber); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <span>🛡️ Smart Silent Zone</span>
+      <span class="sim-tag">COLLEGE PRESENTATION SIMULATION DEMO</span>
+    </div>
+    <div style="font-size: 0.82rem; color: var(--text-muted);">
+      Notice: Simulated browser environment for Android evaluation
+    </div>
+  </header>
+
+  <div class="main-grid">
+    
+    <!-- LEFT: THE PHONE MOCKUP -->
+    <div class="phone-container">
+      <div id="phoneFrame" class="phone-frame">
+        <div class="phone-speaker-island"></div>
+
+        <div class="phone-screen">
+          <div class="phone-header">
+            <span>9:41 AM</span>
+            <span id="phoneNetworkTelemetry">📶 Wi-Fi • 4G • 🔋 98%</span>
+          </div>
+
+          <!-- Selected College & Live Location Card -->
+          <div style="background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.25); border-radius: 14px; padding: 10px 12px; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.68rem; font-weight: 800; color: var(--neon-cyan); text-transform: uppercase;">Campus Geofence</span>
+              <span id="phoneGpsStatusPill" class="hud-chip" style="font-size: 0.65rem; padding: 2px 6px;">GPS READY</span>
+            </div>
+            <div id="phoneSelectedCollege" style="font-size: 0.88rem; font-weight: 800; margin-top: 4px; color: #fff;">
+              Anna University (CEG Campus)
+            </div>
+            <div id="phoneGpsCoords" style="font-size: 0.7rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; margin-top: 2px;">
+              GPS: 13.0108° N, 80.2354° E (±12m)
+            </div>
+            <div id="phoneDistanceBadge" class="live-distance-badge dist-inside">
+              📍 18m from Campus Center • INSIDE GEOFENCE
+            </div>
+          </div>
+
+          <!-- Hero State Card -->
+          <div class="device-hero-card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Active Audio Policy</span>
+              <span id="phoneRingerBadge" class="status-badge badge-silent">SILENT</span>
+            </div>
+            <div id="phoneZoneName" style="font-size: 1.15rem; font-weight: 800; margin-top: 8px;">
+              CEG Ramanujan Lab
+            </div>
+            <div id="phoneZoneFloor" style="font-size: 0.76rem; color: var(--text-muted); margin-top: 3px;">
+              BSSID: e4:5d:51:11:01:01 • 2nd Floor
+            </div>
+          </div>
+
+          <!-- Live Decibel Waveform inside Phone -->
+          <div style="background: rgba(0,0,0,0.3); border-radius: 12px; padding: 8px 12px; margin-bottom: 10px; border: 1px solid rgba(0,229,255,0.15);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span style="font-size: 0.68rem; font-weight: 800; color: var(--neon-cyan);">LIVE CROWD SOUND SENSOR</span>
+              <span id="phoneDecibelVal" style="font-size: 0.75rem; font-weight: 800; color: #fff;">35 dB (Quiet)</span>
+            </div>
+            <div id="phoneEqualizerBars" style="display: flex; gap: 4px; height: 24px; align-items: flex-end;">
+              <div style="flex:1; background: var(--neon-green); height: 30%; border-radius: 2px;"></div>
+              <div style="flex:1; background: var(--neon-green); height: 50%; border-radius: 2px;"></div>
+              <div style="flex:1; background: var(--neon-green); height: 80%; border-radius: 2px;"></div>
+              <div style="flex:1; background: var(--neon-green); height: 40%; border-radius: 2px;"></div>
+              <div style="flex:1; background: var(--neon-green); height: 60%; border-radius: 2px;"></div>
+              <div style="flex:1; background: var(--neon-green); height: 90%; border-radius: 2px;"></div>
+              <div style="flex:1; background: var(--neon-green); height: 45%; border-radius: 2px;"></div>
+              <div style="flex:1; background: var(--neon-green); height: 25%; border-radius: 2px;"></div>
+            </div>
+          </div>
+
+          <!-- Flip-to-Shhh Status Indicator -->
+          <div style="padding: 10px 12px; background: rgba(255,255,255,0.03); border-radius: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <div style="font-size: 0.78rem; font-weight: 700;">Flip-to-Shhh Sensor</div>
+              <div id="flipStatusText" style="font-size: 0.7rem; color: var(--text-muted);">Screen Face Up (Idle)</div>
+            </div>
+            <span id="flipStatusIcon" style="font-size: 1.15rem;">📱</span>
+          </div>
+
+          <!-- Recent In-App Notifications Banner -->
+          <div style="font-size: 0.72rem; font-weight: 800; color: var(--text-muted); margin-bottom: 6px;">SYSTEM AUDIT BANNER</div>
+          <div id="phoneNotificationBanner" style="padding: 10px 12px; background: rgba(0,229,255,0.08); border-left: 3px solid var(--neon-cyan); border-radius: 10px; font-size: 0.75rem; line-height: 1.35; margin-bottom: 12px;">
+            Smart Silent Zone active in background.
+          </div>
+
+          <!-- Manual Override Toggle -->
+          <button id="manualOverrideBtn" class="btn btn-outline" style="width: 100%; margin-top: auto; padding: 8px;" onclick="toggleManualOverride()">
+            Toggle Manual Override
+          </button>
+        </div>
+
+        <!-- OVERLAY 1: Incoming Call Simulation -->
+        <div id="incomingCallOverlay" class="phone-overlay-card">
+          <div style="font-size: 2.5rem; margin-bottom: 10px;">📞</div>
+          <div style="font-size: 1.2rem; font-weight: 800;" id="incomingCallerName">Dad (VIP Contact)</div>
+          <div style="font-size: 0.8rem; color: var(--neon-cyan); margin-top: 4px;">Incoming Call (Phone Silenced)</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 14px;">
+            Ringer silenced by Smart Silent Zone.<br>Auto-SMS trigger in progress...
+          </div>
+          <div style="margin-top: 20px; display: flex; gap: 10px;">
+            <button class="btn btn-danger" onclick="endSimulatedCall()">End Call (Trigger SMS)</button>
+          </div>
+        </div>
+
+        <!-- OVERLAY 2: SMS Sent Bubble Notification -->
+        <div id="smsSentOverlay" class="phone-overlay-card">
+          <div style="font-size: 2.2rem; margin-bottom: 8px;">💬</div>
+          <div style="font-size: 1.1rem; font-weight: 800;">Break-Glass Auto-SMS Sent</div>
+          <div class="sms-bubble" id="smsBubbleText">
+            "Hi Dad, I'm in CSE 3rd Floor Lab. My phone is silenced until 11:30 AM. For an emergency, reply EMERGENCY."
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-muted);">
+            Rate-limit active: 1 auto-reply per 30 minutes.
+          </div>
+          <button class="btn btn-primary" style="margin-top: 14px; width: 100%;" onclick="dismissSmsOverlay()">
+            OK, Understood
+          </button>
+        </div>
+
+        <!-- OVERLAY 3: EMERGENCY LOUD SIREN -->
+        <div id="emergencySirenOverlay" class="phone-overlay-card" style="border-color: var(--neon-red); background: rgba(30, 8, 8, 0.96);">
+          <div style="font-size: 3rem; animation: pulseGlow 0.5s infinite alternate;">🚨</div>
+          <div style="font-size: 1.3rem; font-weight: 800; color: var(--neon-red);">EMERGENCY OVERRIDE!</div>
+          <div style="font-size: 0.82rem; color: #fff; margin-top: 6px;">
+            VIP Dad sent "EMERGENCY" keyword!<br>Silent / DND mode has been overridden.
+          </div>
+          <button class="btn btn-danger" style="margin-top: 24px; padding: 14px 28px;" onclick="dismissEmergencySiren()">
+            🔕 Dismiss Loud Alarm
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RIGHT: INTERACTIVE CONTROL PANEL -->
+    <div class="control-panel">
+      
+      <!-- 0. Live Interactive Student & College Geofence Setup (Quiz Flow) -->
+      <div class="glass panel-section" style="border: 1px solid var(--neon-cyan); box-shadow: 0 0 25px rgba(0, 229, 255, 0.15);">
+        <div class="section-title">
+          <span>🎯 0. Real-Time Student Campus Setup (Single-Click Flow)</span>
+          <span class="hud-chip" id="hudGpsBadge">REAL-TIME GPS</span>
+        </div>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">
+          Set up your college location. When permission is granted, your real GPS position directly drives auto-silencing actions:
+        </p>
+
+        <!-- QUIZ STEP 1: Role -->
+        <div style="margin-bottom: 12px;">
+          <div style="font-size: 0.78rem; font-weight: 700; color: var(--neon-cyan); margin-bottom: 4px;">
+            1️⃣ What is your campus role?
+          </div>
+          <div class="quiz-choice-group">
+            <button class="quiz-choice-btn selected" id="roleBtnStudent" onclick="selectRole('Student')">🎓 College Student</button>
+            <button class="quiz-choice-btn" id="roleBtnFaculty" onclick="selectRole('Faculty')">👨‍🏫 Faculty / Staff</button>
+            <button class="quiz-choice-btn" id="roleBtnVisitor" onclick="selectRole('Visitor')">🏛️ Visitor / Exam</button>
+          </div>
+        </div>
+
+        <!-- QUIZ STEP 2: State -> District -> College -->
+        <div style="margin-bottom: 14px;">
+          <div style="font-size: 0.78rem; font-weight: 700; color: var(--neon-cyan); margin-bottom: 6px; display: flex; justify-content: space-between;">
+            <span>2️⃣ Where is your College? (State ➔ District ➔ College)</span>
+            <button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.68rem;" onclick="autoDetectNearestCollege()">📍 Auto-Detect Nearest</button>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+            <div>
+              <label style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 2px; display: block;">Select State</label>
+              <select id="stateSelect" onchange="onStateChanged()" style="padding: 8px; font-size: 0.8rem;">
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+            <div>
+              <label style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 2px; display: block;">Select District</label>
+              <select id="districtSelect" onchange="onDistrictChanged()" style="padding: 8px; font-size: 0.8rem;">
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+          </div>
+          <div>
+            <label style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 2px; display: block;">Select Campus / University</label>
+            <select id="collegeSelect" onchange="onCollegeChanged()" style="padding: 8px; font-size: 0.82rem;">
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+        </div>
+
+        <!-- QUIZ STEP 3: Real Hardware Sensors -->
+        <div style="margin-bottom: 14px;">
+          <div style="font-size: 0.78rem; font-weight: 700; color: var(--neon-cyan); margin-bottom: 6px;">
+            3️⃣ Connect Live Hardware Sensors
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn btn-primary" id="btnRequestGps" style="flex: 1; font-size: 0.75rem; padding: 8px;" onclick="requestLiveGps()">
+              📍 Enable Live GPS Location
+            </button>
+            <button class="btn btn-outline" id="btnRequestMic" style="flex: 1; font-size: 0.75rem; padding: 8px;" onclick="toggleMicrophone()">
+              🎙️ Enable Live Decibel Mic
+            </button>
+          </div>
+        </div>
+
+        <!-- REAL-TIME TELEMETRY & ACTIONS BOX -->
+        <div style="background: rgba(0,0,0,0.35); border: 1px solid rgba(0,229,255,0.2); border-radius: 12px; padding: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 0.75rem; font-weight: 700; color: var(--neon-cyan);">Live Telemetry & Actions</span>
+            <span id="telemetryStatusPill" class="hud-chip" style="font-size: 0.65rem;">CALCULATING</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.72rem; color: var(--text-muted); margin-bottom: 8px;">
+            <div>
+              <div>My Real GPS:</div>
+              <strong id="ctrlUserGps" style="color: #fff; font-family: monospace;">Fetching...</strong>
+            </div>
+            <div>
+              <div>College Coordinates:</div>
+              <strong id="ctrlCollegeGps" style="color: #fff; font-family: monospace;">13.0108, 80.2354</strong>
+            </div>
+            <div>
+              <div>Live Distance:</div>
+              <strong id="ctrlLiveDistance" style="color: var(--neon-green);">Calculating...</strong>
+            </div>
+            <div>
+              <div>Browser Network:</div>
+              <strong id="ctrlNetworkStatus" style="color: var(--neon-cyan);">4G Online (10 Mbps)</strong>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 8px; margin-top: 8px;">
+            <button class="btn btn-outline" style="flex: 1; font-size: 0.72rem; padding: 6px;" onclick="requestLiveGps()">
+              🔄 Re-Acquire GPS
+            </button>
+            <button class="btn btn-outline" id="btnSimulateWalk" style="flex: 1; font-size: 0.72rem; padding: 6px;" onclick="toggleSimulatedCampusEntry()">
+              🚶 Simulate Step Inside Campus
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1. Wi-Fi Floor Detection Simulation -->
+      <div class="glass panel-section">
+        <div class="section-title">
+          <span>📶 1. Wi-Fi BSSID Indoor Floor Resolver</span>
+          <span class="hud-chip">SIMULATED ROUTER</span>
+        </div>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">
+          Select which college Access Point the phone connects to. Matches against Room survey table to resolve exact floor:
+        </p>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 14px;">
+          <select id="bssidSelect" onchange="onBssidChanged()">
+            <option value="e4:5d:51:22:33:44">e4:5d:51:22:33:44 ➔ CSE 3rd Floor Lab (SILENT)</option>
+            <option value="e4:5d:51:22:33:55">e4:5d:51:22:33:55 ➔ Central Library 1st Floor (SILENT)</option>
+            <option value="e4:5d:51:22:33:66">e4:5d:51:22:33:66 ➔ Campus Canteen Ground Floor (NORMAL)</option>
+            <option value="e4:5d:51:22:33:77">e4:5d:51:22:33:77 ➔ Seminar Complex 2nd Floor (VIBRATE)</option>
+            <option value="none">Disconnected / Outside Campus (NORMAL)</option>
+          </select>
+        </div>
+
+        <!-- Editable Survey Table Card -->
+        <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 12px; font-size: 0.78rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-weight: 700; color: var(--neon-cyan);">Room Table: BSSID ➔ Floor Survey</span>
+            <button class="btn btn-outline" style="padding: 3px 8px; font-size: 0.7rem;" onclick="toggleAddApForm()">+ Add New AP</button>
+          </div>
+          
+          <!-- Add AP Form (Collapsible) -->
+          <div id="addApForm" style="display: none; background: rgba(0,229,255,0.06); padding: 10px; border-radius: 8px; margin-bottom: 10px; border: 1px dashed var(--neon-cyan);">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
+              <input type="text" id="newBssid" placeholder="BSSID (e.g. e4:5d:51:aa:bb:cc)" style="font-size: 0.75rem; padding: 6px;">
+              <input type="text" id="newZoneName" placeholder="Zone (e.g. AI & Robotics Lab)" style="font-size: 0.75rem; padding: 6px;">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px;">
+              <input type="text" id="newFloor" placeholder="Floor (e.g. 4th Floor)" style="font-size: 0.75rem; padding: 6px;">
+              <select id="newPolicy" style="font-size: 0.75rem; padding: 6px;">
+                <option value="SILENT">SILENT</option>
+                <option value="VIBRATE">VIBRATE</option>
+                <option value="NORMAL">NORMAL</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" style="width: 100%; font-size: 0.75rem; padding: 6px;" onclick="addNewApToSurvey()">Save AP to Room Table</button>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 120px 1fr 70px 70px; color: var(--text-muted); border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 4px; font-weight: 600;">
+            <span>BSSID MAC</span><span>Zone Name</span><span>Floor</span><span>Policy</span>
+          </div>
+          <div id="surveyTableRows" style="max-height: 120px; overflow-y: auto;">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Break-Glass Auto-SMS Simulation -->
+      <div class="glass panel-section">
+        <div class="section-title">
+          <span>🚨 2. Break-Glass VIP Auto-SMS & Emergency Override</span>
+          <span id="rateLimitBadge" class="hud-chip" style="color: var(--neon-green);">RATE-LIMIT: READY</span>
+        </div>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">
+          When an emergency call ends while in silent zone, an auto-SMS is sent. VIP typing <strong>EMERGENCY</strong> overrides DND!
+        </p>
+
+        <!-- VIP List Card -->
+        <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 12px; margin-bottom: 12px;">
+          <div style="font-size: 0.78rem; font-weight: 700; color: var(--neon-cyan); margin-bottom: 8px; display: flex; justify-content: space-between;">
+            <span>VIP Whitelist (Stored in Room)</span>
+            <span style="color: var(--text-muted);">2 VIPs Active</span>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 140px; background: rgba(255,255,255,0.04); padding: 8px 12px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
+              <div>
+                <div style="font-size: 0.82rem; font-weight: 700;">Dad (VIP)</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted);">+91 98765 12345</div>
+              </div>
+              <button class="btn btn-primary" style="padding: 4px 8px; font-size: 0.72rem;" onclick="simulateIncomingCall('Dad')">📞 Call</button>
+            </div>
+            <div style="flex: 1; min-width: 140px; background: rgba(255,255,255,0.04); padding: 8px 12px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
+              <div>
+                <div style="font-size: 0.82rem; font-weight: 700;">Mom (VIP)</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted);">+91 98765 43210</div>
+              </div>
+              <button class="btn btn-primary" style="padding: 4px 8px; font-size: 0.72rem;" onclick="simulateIncomingCall('Mom')">📞 Call</button>
+            </div>
+          </div>
+          <div style="margin-top: 8px; text-align: right;">
+            <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.72rem;" onclick="simulateIncomingCall('Unknown Caller')">📞 Test Non-VIP Call (No SMS)</button>
+          </div>
+        </div>
+
+        <!-- Dad / Mom SMS Reply Box -->
+        <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 12px;">
+          <div style="font-size: 0.78rem; font-weight: 700; margin-bottom: 6px; display: flex; justify-content: space-between;">
+            <span>VIP SMS Response Simulator (Simulated Sender)</span>
+            <span style="font-size: 0.7rem; color: var(--neon-amber);">Key: 'EMERGENCY'</span>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="dadSmsInput" placeholder="Type 'EMERGENCY' to trigger loud alarm..." value="EMERGENCY">
+            <button class="btn btn-danger" onclick="sendDadSmsReply()">Send SMS</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Flip-to-Shhh & Smartwatch Mockup -->
+      <div style="display: grid; grid-template-columns: 1fr 160px; gap: 16px;">
+        
+        <!-- Flip Sensor Sliders -->
+        <div class="glass panel-section">
+          <div class="section-title">
+            <span>📲 3. Flip-to-Shhh Sensor Fusion</span>
+            <button id="mobileMotionBtn" class="btn btn-outline" style="padding: 2px 8px; font-size: 0.68rem;" onclick="enableMobileMotion()">Enable Device Tilt</button>
+          </div>
+
+          <div class="slider-row">
+            <div class="slider-header">
+              <span>Proximity Sensor (0 cm = Covered / Table)</span>
+              <span id="valProx">5 cm</span>
+            </div>
+            <input type="range" id="sliderProx" min="0" max="5" step="5" value="5" oninput="onSensorSlide()">
+          </div>
+
+          <div class="slider-row">
+            <div class="slider-header">
+              <span>Ambient Light (&lt;5 lux = Pocket / Dark)</span>
+              <span id="valLux">180 lux</span>
+            </div>
+            <input type="range" id="sliderLux" min="0" max="400" value="180" oninput="onSensorSlide()">
+          </div>
+
+          <div class="slider-row">
+            <div class="slider-header">
+              <span>Tilt Z-Axis (&lt;-9.0 m/s² = Screen Flat Down)</span>
+              <span id="valTilt">+9.8 m/s²</span>
+            </div>
+            <input type="range" id="sliderTilt" min="-9.8" max="9.8" step="0.5" value="9.8" oninput="onSensorSlide()">
+          </div>
+
+          <div style="display: flex; gap: 6px; margin-top: 6px;">
+            <button class="btn btn-outline" style="font-size: 0.72rem; flex: 1;" onclick="triggerFlipPreset()">
+              ⚡ 1-Click Face-Down (Silent)
+            </button>
+            <button class="btn btn-outline" style="font-size: 0.72rem; flex: 1;" onclick="resetFlipPreset()">
+              🔄 Pickup Face-Up (Normal)
+            </button>
+          </div>
+        </div>
+
+        <!-- 4. Smartwatch Mockup -->
+        <div class="glass panel-section" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+          <div style="font-size: 0.75rem; font-weight: 800; color: var(--neon-cyan); margin-bottom: 8px;">4. WATCH SYNC</div>
+          <div id="smartwatchEl" class="watch-mockup">
+            <div style="font-size: 1.1rem; margin-bottom: 4px;">⌚</div>
+            <div style="font-weight: 800; font-size: 0.72rem; color: var(--neon-cyan);">Smart Silent</div>
+            <div id="watchNotifText" style="font-size: 0.65rem; color: var(--text-muted); margin-top: 4px;">
+              Connected via Bluetooth
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 5. Campus Silence Heatmap -->
+      <div class="glass panel-section">
+        <div class="section-title">
+          <span>👥 5. Campus Silence & Noise Heatmap</span>
+          <button id="micBtn" class="btn btn-outline" style="padding: 4px 10px; font-size: 0.75rem;" onclick="toggleMicrophone()">
+            🎙️ Use My Mic
+          </button>
+        </div>
+        <div style="font-size: 0.72rem; color: var(--neon-cyan); margin-bottom: 8px; background: rgba(0,229,255,0.06); padding: 6px 10px; border-radius: 6px;">
+          🔒 <strong>Privacy Note:</strong> Decibel sampled via Web Audio API AnalyserNode in local RAM only. Audio is <u>never recorded, stored, or transmitted</u>.
+        </div>
+        <canvas id="heatmapCanvas"></canvas>
+        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 8px;">
+          <span>🟢 &lt;40 dB: Quiet Study Zone</span>
+          <span>🟡 40-60 dB: Moderate Lecture</span>
+          <span>🔴 &gt;60 dB: Canteen / Crowded</span>
+        </div>
+      </div>
+
+      <!-- 6. Real-Time Event Log Panel -->
+      <div class="glass panel-section">
+        <div class="section-title">
+          <span>📜 Real-Time Event Audit Log</span>
+          <button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.72rem;" onclick="clearLogs()">Clear</button>
+        </div>
+        <div class="log-box" id="logBox">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    // Audio Context for Siren & Chimes
+    let audioCtx = null;
+    let sirenOsc = null;
+    let sirenGain = null;
+    let isSirenPlaying = false;
+
+    function initAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    function playChime(freq = 523.25) {
+      initAudio();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.35);
+    }
+
+    function startLoudEmergencySiren() {
+      initAudio();
+      if (isSirenPlaying) return;
+      isSirenPlaying = true;
+      sirenOsc = audioCtx.createOscillator();
+      sirenGain = audioCtx.createGain();
+      sirenOsc.type = 'sawtooth';
+
+      // Modulating siren tone (800Hz to 1400Hz)
+      const now = audioCtx.currentTime;
+      for (let i = 0; i < 20; i++) {
+        sirenOsc.frequency.setValueAtTime(800, now + i * 0.8);
+        sirenOsc.frequency.linearRampToValueAtTime(1400, now + i * 0.8 + 0.4);
+      }
+      sirenGain.gain.setValueAtTime(0.3, now);
+      sirenOsc.connect(sirenGain);
+      sirenGain.connect(audioCtx.destination);
+      sirenOsc.start();
+    }
+
+    function stopEmergencySiren() {
+      if (sirenOsc) {
+        try { sirenOsc.stop(); } catch(e) {}
+        sirenOsc = null;
+      }
+      isSirenPlaying = false;
+    }
+
+    // ==========================================
+    // 0. COLLEGE DATABASE & REAL-TIME GPS ENGINE
+    // ==========================================
+    const collegeDatabase = {
+      "Tamil Nadu": {
+        "Chennai": [
+          {
+            id: "anna_ceg",
+            name: "Anna University (CEG Campus)",
+            district: "Chennai",
+            lat: 13.0108,
+            lng: 80.2354,
+            radius: 500,
+            aps: [
+              { bssid: "e4:5d:51:11:01:01", zone: "CEG Ramanujan Computing Centre", floor: "2nd Floor", policy: "SILENT" },
+              { bssid: "e4:5d:51:11:01:02", zone: "CEG Central Library", floor: "Ground Floor", policy: "SILENT" },
+              { bssid: "e4:5d:51:11:01:03", zone: "Vivekananda Auditorium", floor: "Main Hall", policy: "SILENT" },
+              { bssid: "e4:5d:51:11:01:04", zone: "Campus Canteen & Cafeteria", floor: "Ground Floor", policy: "NORMAL" }
+            ]
+          },
+          {
+            id: "iit_madras",
+            name: "IIT Madras (Indian Institute of Technology)",
+            district: "Chennai",
+            lat: 12.9915,
+            lng: 80.2337,
+            radius: 650,
+            aps: [
+              { bssid: "e4:5d:51:11:02:01", zone: "IITM Central Lecture Theatre (CLT)", floor: "1st Floor", policy: "SILENT" },
+              { bssid: "e4:5d:51:11:02:02", zone: "IITM Central Library", floor: "3rd Floor", policy: "SILENT" },
+              { bssid: "e4:5d:51:11:02:03", zone: "Himalaya Food Court", floor: "Ground Floor", policy: "NORMAL" }
+            ]
+          },
+          {
+            id: "ssn_ce",
+            name: "SSN College of Engineering (Kalavakkam)",
+            district: "Chennai",
+            lat: 12.7508,
+            lng: 80.1970,
+            radius: 500,
+            aps: [
+              { bssid: "e4:5d:51:11:03:01", zone: "SSN Central Library", floor: "1st Floor", policy: "SILENT" },
+              { bssid: "e4:5d:51:11:03:02", zone: "CSE Seminar Hall", floor: "2nd Floor", policy: "SILENT" },
+              { bssid: "e4:5d:51:11:03:03", zone: "Student Amenities Block", floor: "Ground Floor", policy: "NORMAL" }
+            ]
+          },
+          {
+            id: "srm_ktr",
+            name: "SRM Institute of Science & Tech (Kattankulathur)",
+            district: "Chennai",
+            lat: 12.8230,
+            lng: 80.0444,
+            radius: 650,
+            aps: [
+              { bssid: "e4:5d:51:11:04:01", zone: "Tech Park Central Computing Lab", floor: "4th Floor", policy: "SILENT" },
+              { bssid: "e4:5d:51:11:04:02", zone: "University Library Tower", floor: "2nd Floor", policy: "SILENT" },
+              { bssid: "e4:5d:51:11:04:03", zone: "Java Green Cafe", floor: "Ground Floor", policy: "NORMAL" }
+            ]
+          }
+        ],
+        "Coimbatore": [
+          {
+            id: "psg_tech",
+            name: "PSG College of Technology (Peelamedu)",
+            district: "Coimbatore",
+            lat: 11.0247,
+            lng: 76.9941,
+            radius: 450,
+            aps: [
+              { bssid: "e4:5d:51:22:01:01", zone: "PSG GRD Memorial Auditorium", floor: "Ground Floor", policy: "SILENT" },
+              { bssid: "e4:5d:51:22:01:02", zone: "CSE AI Research Lab", floor: "3rd Floor", policy: "SILENT" },
+              { bssid: "e4:5d:51:22:01:03", zone: "PSG Canteen", floor: "Ground Floor", policy: "NORMAL" }
+            ]
+          },
+          {
+            id: "cit_cbe",
+            name: "Coimbatore Institute of Technology (CIT)",
+            district: "Coimbatore",
+            lat: 11.0286,
+            lng: 77.0274,
+            radius: 400,
+            aps: [
+              { bssid: "e4:5d:51:22:02:01", zone: "CIT Library & Reading Hall", floor: "2nd Floor", policy: "SILENT" },
+              { bssid: "e4:5d:51:22:02:02", zone: "IT Department Lab", floor: "1st Floor", policy: "SILENT" }
+            ]
+          },
+          {
+            id: "gct_cbe",
+            name: "Government College of Technology (GCT)",
+            district: "Coimbatore",
+            lat: 11.0180,
+            lng: 76.9329,
+            radius: 450,
+            aps: [
+              { bssid: "e4:5d:51:22:03:01", zone: "GCT Main Auditorium", floor: "Ground Floor", policy: "SILENT" },
+              { bssid: "e4:5d:51:22:03:02", zone: "Electronics Department Lab", floor: "2nd Floor", policy: "SILENT" }
+            ]
+          }
+        ],
+        "Madurai": [
+          {
+            id: "tce_mdu",
+            name: "Thiagarajar College of Engineering (TCE)",
+            district: "Madurai",
+            lat: 9.8828,
+            lng: 78.0815,
+            radius: 450,
+            aps: [
+              { bssid: "e4:5d:51:33:01:01", zone: "TCE Open Air Auditorium", floor: "1st Floor", policy: "SILENT" },
+              { bssid: "e4:5d:51:33:01:02", zone: "Central Computing Centre", floor: "2nd Floor", policy: "SILENT" },
+              { bssid: "e4:5d:51:33:01:03", zone: "Student Cafeteria", floor: "Ground Floor", policy: "NORMAL" }
+            ]
+          }
+        ],
+        "Tiruchirappalli": [
+          {
+            id: "nit_trichy",
+            name: "National Institute of Technology (NIT Trichy)",
+            district: "Tiruchirappalli",
+            lat: 10.7589,
+            lng: 78.8132,
+            radius: 650,
+            aps: [
+              { bssid: "e4:5d:51:44:01:01", zone: "Orion Lecture Hall Complex", floor: "2nd Floor", policy: "SILENT" },
+              { bssid: "e4:5d:51:44:01:02", zone: "NIT Central Library", floor: "1st Floor", policy: "SILENT" },
+              { bssid: "e4:5d:51:44:01:03", zone: "Mega Mess Food Complex", floor: "Ground Floor", policy: "NORMAL" }
+            ]
+          }
+        ],
+        "Salem": [
+          {
+            id: "gce_salem",
+            name: "Government College of Engineering (Salem)",
+            district: "Salem",
+            lat: 11.7061,
+            lng: 78.1177,
+            radius: 400,
+            aps: [
+              { bssid: "e4:5d:51:55:01:01", zone: "GCE Central Seminar Hall", floor: "1st Floor", policy: "SILENT" },
+              { bssid: "e4:5d:51:55:01:02", zone: "Computer Centre", floor: "Ground Floor", policy: "SILENT" }
+            ]
+          }
+        ],
+        "Vellore": [
+          {
+            id: "vit_vellore",
+            name: "Vellore Institute of Technology (VIT)",
+            district: "Vellore",
+            lat: 12.9698,
+            lng: 79.1559,
+            radius: 650,
+            aps: [
+              { bssid: "e4:5d:51:66:01:01", zone: "Technology Tower (TT) Lab", floor: "4th Floor", policy: "SILENT" },
+              { bssid: "e4:5d:51:66:01:02", zone: "Anna Auditorium", floor: "Main Hall", policy: "SILENT" },
+              { bssid: "e4:5d:51:66:01:03", zone: "Gazebo Food Court", floor: "Ground Floor", policy: "NORMAL" }
+            ]
+          }
+        ],
+        "Thanjavur": [
+          {
+            id: "sastra_univ",
+            name: "SASTRA Deemed University (Thirumalaisamudram)",
+            district: "Thanjavur",
+            lat: 10.7275,
+            lng: 79.0185,
+            radius: 500,
+            aps: [
+              { bssid: "e4:5d:51:77:01:01", zone: "Nirman Vihar Lecture Complex", floor: "3rd Floor", policy: "SILENT" },
+              { bssid: "e4:5d:51:77:01:02", zone: "Saraswathi Sannidhi Library", floor: "2nd Floor", policy: "SILENT" },
+              { bssid: "e4:5d:51:77:01:03", zone: "Canopy Cafeteria", floor: "Ground Floor", policy: "NORMAL" }
+            ]
+          }
+        ]
+      },
+      "Karnataka": {
+        "Bengaluru": [
+          {
+            id: "iisc_blr",
+            name: "IISc (Indian Institute of Science)",
+            district: "Bengaluru",
+            lat: 13.0219,
+            lng: 77.5671,
+            radius: 600,
+            aps: [
+              { bssid: "e4:5d:51:88:01:01", zone: "Faculty Hall / Main Building", floor: "1st Floor", policy: "SILENT" },
+              { bssid: "e4:5d:51:88:01:02", zone: "JRD Tata Memorial Library", floor: "2nd Floor", policy: "SILENT" }
+            ]
+          },
+          {
+            id: "rv_ce",
+            name: "RV College of Engineering (RVCE)",
+            district: "Bengaluru",
+            lat: 12.9237,
+            lng: 77.4987,
+            radius: 450,
+            aps: [
+              { bssid: "e4:5d:51:88:02:01", zone: "Civil Seminar Hall", floor: "Ground Floor", policy: "SILENT" },
+              { bssid: "e4:5d:51:88:02:02", zone: "CSE Computing Wing", floor: "3rd Floor", policy: "SILENT" }
+            ]
+          }
+        ]
+      },
+      "Kerala": {
+        "Kochi": [
+          {
+            id: "cusat",
+            name: "CUSAT (Cochin University of Science & Tech)",
+            district: "Kochi",
+            lat: 10.0438,
+            lng: 76.3262,
+            radius: 500,
+            aps: [
+              { bssid: "e4:5d:51:99:01:01", zone: "SMS Auditorium & Labs", floor: "1st Floor", policy: "SILENT" },
+              { bssid: "e4:5d:51:99:01:02", zone: "Central University Library", floor: "2nd Floor", policy: "SILENT" }
+            ]
+          }
+        ]
+      }
+    };
+
+    // Global state
+    let selectedRole = "Student";
+    let selectedCollege = collegeDatabase["Tamil Nadu"]["Chennai"][0]; // Anna CEG default
+    let realUserLat = 13.0108;
+    let realUserLng = 80.2354;
+    let realUserAccuracy = 15; // in meters
+    let isRealGpsAcquired = false;
+    let isSimulatedInsideCampus = true;
+
+    // STATE
+    let currentZone = { name: "CEG Ramanujan Lab", floor: "2nd Floor", policy: "SILENT" };
+    let currentRinger = "SILENT";
+    let isManualOverride = false;
+    let lastAutoSmsTimestamp = 0;
+    const RATE_LIMIT_MS = 60 * 1000; // 1 minute demo rate limit
+
+    function addLog(msg) {
+      const logBox = document.getElementById('logBox');
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const el = document.createElement('div');
+      el.className = 'log-item';
+      el.innerHTML = `<strong>[${time}]</strong> ${msg}`;
+      logBox.prepend(el);
+    }
+    addLog("System started in simulation demo mode.");
+
+    // Role selection
+    function selectRole(role) {
+      selectedRole = role;
+      document.getElementById('roleBtnStudent').classList.toggle('selected', role === 'Student');
+      document.getElementById('roleBtnFaculty').classList.toggle('selected', role === 'Faculty');
+      document.getElementById('roleBtnVisitor').classList.toggle('selected', role === 'Visitor');
+      addLog(`Role selected: ${role}`);
+    }
+
+    // Initialize Dropdowns
+    function initCollegeDropdowns() {
+      const stateSelect = document.getElementById('stateSelect');
+      stateSelect.innerHTML = '';
+      for (const state of Object.keys(collegeDatabase)) {
+        const opt = document.createElement('option');
+        opt.value = state;
+        opt.innerText = state;
+        stateSelect.appendChild(opt);
+      }
+      onStateChanged();
+    }
+
+    function onStateChanged() {
+      const state = document.getElementById('stateSelect').value;
+      const districtSelect = document.getElementById('districtSelect');
+      districtSelect.innerHTML = '';
+      const districts = collegeDatabase[state] ? Object.keys(collegeDatabase[state]) : [];
+      districts.forEach(dist => {
+        const opt = document.createElement('option');
+        opt.value = dist;
+        opt.innerText = dist;
+        districtSelect.appendChild(opt);
+      });
+      onDistrictChanged();
+    }
+
+    function onDistrictChanged() {
+      const state = document.getElementById('stateSelect').value;
+      const district = document.getElementById('districtSelect').value;
+      const collegeSelect = document.getElementById('collegeSelect');
+      collegeSelect.innerHTML = '';
+      const colleges = (collegeDatabase[state] && collegeDatabase[state][district]) ? collegeDatabase[state][district] : [];
+      colleges.forEach(col => {
+        const opt = document.createElement('option');
+        opt.value = col.id;
+        opt.innerText = col.name;
+        collegeSelect.appendChild(opt);
+      });
+      onCollegeChanged();
+    }
+
+    function onCollegeChanged() {
+      const state = document.getElementById('stateSelect').value;
+      const district = document.getElementById('districtSelect').value;
+      const colId = document.getElementById('collegeSelect').value;
+      const list = (collegeDatabase[state] && collegeDatabase[state][district]) ? collegeDatabase[state][district] : [];
+      const match = list.find(c => c.id === colId);
+      if (match) {
+        selectedCollege = match;
+        applySelectedCollege();
+      }
+    }
+
+    function applySelectedCollege() {
+      document.getElementById('phoneSelectedCollege').innerText = selectedCollege.name;
+      document.getElementById('ctrlCollegeGps').innerText = `${selectedCollege.lat.toFixed(4)}, ${selectedCollege.lng.toFixed(4)}`;
+      
+      // Update BSSID table to match this college's APs
+      bssidTable = {};
+      selectedCollege.aps.forEach(ap => {
+        bssidTable[ap.bssid] = { name: ap.zone, floor: ap.floor, policy: ap.policy };
+      });
+      bssidTable["none"] = { name: "Outside Campus", floor: "Disconnected", policy: "NORMAL" };
+
+      // Update BSSID select dropdown
+      const sel = document.getElementById('bssidSelect');
+      sel.innerHTML = '';
+      selectedCollege.aps.forEach(ap => {
+        const opt = document.createElement('option');
+        opt.value = ap.bssid;
+        opt.innerText = `${ap.bssid} ➔ ${ap.zone} (${ap.policy})`;
+        sel.appendChild(opt);
+      });
+      const outsideOpt = document.createElement('option');
+      outsideOpt.value = "none";
+      outsideOpt.innerText = "Disconnected / Outside Campus (NORMAL)";
+      sel.appendChild(outsideOpt);
+
+      renderSurveyTable();
+      updateDistanceAndGeofenceActions();
+
+      // Dynamically update radar heatmap zones to match selected college buildings
+      if (selectedCollege.aps && selectedCollege.aps.length > 0) {
+        const positions = [
+          { x: 70, y: 100 },
+          { x: 190, y: 70 },
+          { x: 300, y: 90 },
+          { x: 130, y: 150 },
+          { x: 260, y: 150 }
+        ];
+        campusZones = selectedCollege.aps.map((ap, idx) => {
+          const pos = positions[idx % positions.length];
+          const initialDb = ap.policy === 'SILENT' ? 32 : (ap.policy === 'VIBRATE' ? 48 : 74);
+          const shortName = ap.zone.split(' ')[0] + ' ' + (ap.zone.split(' ')[1] || '');
+          return {
+            name: shortName,
+            x: pos.x,
+            y: pos.y,
+            db: initialDb
+          };
+        });
+      }
+
+      onBssidChanged();
+      addLog(`Loaded campus profile: ${selectedCollege.name} (${selectedCollege.district})`);
+    }
+
+    // Haversine distance in meters
+    function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
+      const R = 6371000; // Radius of earth in meters
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    // Request Real GPS Location
+    function requestLiveGps() {
+      if (!("geolocation" in navigator)) {
+        alert("Geolocation is not supported by your browser.");
+        return;
+      }
+
+      addLog("Requesting real browser GPS location...");
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          isRealGpsAcquired = true;
+          realUserLat = pos.coords.latitude;
+          realUserLng = pos.coords.longitude;
+          realUserAccuracy = Math.round(pos.coords.accuracy);
+
+          document.getElementById('hudGpsBadge').innerText = "LIVE GPS: ACQUIRED";
+          document.getElementById('phoneGpsStatusPill').innerText = "LIVE GPS (±" + realUserAccuracy + "m)";
+          document.getElementById('btnRequestGps').innerText = "🟢 GPS Active";
+
+          addLog(`Real GPS Acquired: ${realUserLat.toFixed(5)}°N, ${realUserLng.toFixed(5)}°E (Accuracy ±${realUserAccuracy}m)`);
+          updateDistanceAndGeofenceActions();
+        },
+        (err) => {
+          addLog(`GPS Request Warning: ${err.message}. Running in high-precision simulated location mode.`);
+          alert("GPS permission was denied or unavailable. You can still test with simulated coordinates and proximity actions!");
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    }
+
+    function autoDetectNearestCollege() {
+      if (!isRealGpsAcquired) {
+        requestLiveGps();
+      }
+      let minDistance = Infinity;
+      let nearestCol = null;
+      let nearestState = null;
+      let nearestDistrict = null;
+
+      for (const [state, districts] of Object.entries(collegeDatabase)) {
+        for (const [dist, colleges] of Object.entries(districts)) {
+          for (const col of colleges) {
+            const d = getDistanceFromLatLonInMeters(realUserLat, realUserLng, col.lat, col.lng);
+            if (d < minDistance) {
+              minDistance = d;
+              nearestCol = col;
+              nearestState = state;
+              nearestDistrict = dist;
+            }
+          }
+        }
+      }
+
+      if (nearestCol) {
+        document.getElementById('stateSelect').value = nearestState;
+        onStateChanged();
+        document.getElementById('districtSelect').value = nearestDistrict;
+        onDistrictChanged();
+        document.getElementById('collegeSelect').value = nearestCol.id;
+        onCollegeChanged();
+
+        const km = (minDistance / 1000).toFixed(1);
+        addLog(`Auto-detected nearest college: ${nearestCol.name} (${km} km away)`);
+        alert(`Nearest College Found: ${nearestCol.name} (${km} km from your location)`);
+      }
+    }
+
+    function toggleSimulatedCampusEntry() {
+      isSimulatedInsideCampus = !isSimulatedInsideCampus;
+      const btn = document.getElementById('btnSimulateWalk');
+      if (isSimulatedInsideCampus) {
+        // Position user right inside campus center
+        realUserLat = selectedCollege.lat + 0.0001;
+        realUserLng = selectedCollege.lng + 0.0001;
+        btn.innerText = "🚶 Simulate Step Outside Campus";
+        addLog(`Simulated movement: Walked INSIDE ${selectedCollege.name} campus perimeter.`);
+      } else {
+        // Position user 2.5 km away
+        realUserLat = selectedCollege.lat + 0.025;
+        realUserLng = selectedCollege.lng + 0.025;
+        btn.innerText = "🚶 Simulate Step Inside Campus";
+        addLog(`Simulated movement: Exited campus. Currently 2.5 km away.`);
+      }
+      updateDistanceAndGeofenceActions();
+    }
+
+    function updateDistanceAndGeofenceActions() {
+      const distMeters = Math.round(getDistanceFromLatLonInMeters(realUserLat, realUserLng, selectedCollege.lat, selectedCollege.lng));
+      const isInside = distMeters <= selectedCollege.radius;
+
+      // Update UI elements
+      document.getElementById('ctrlUserGps').innerText = `${realUserLat.toFixed(4)}, ${realUserLng.toFixed(4)}`;
+      document.getElementById('phoneGpsCoords').innerText = `GPS: ${realUserLat.toFixed(4)}°N, ${realUserLng.toFixed(4)}°E (±${realUserAccuracy}m)`;
+
+      const distStr = distMeters < 1000 ? `${distMeters} m` : `${(distMeters / 1000).toFixed(2)} km`;
+      document.getElementById('ctrlLiveDistance').innerText = `${distStr} (${isInside ? 'Inside' : 'Outside'})`;
+
+      const distBadge = document.getElementById('phoneDistanceBadge');
+      const telemetryPill = document.getElementById('telemetryStatusPill');
+
+      if (isInside) {
+        distBadge.className = 'live-distance-badge dist-inside';
+        distBadge.innerText = `📍 ${distStr} • INSIDE GEOFENCE (< ${selectedCollege.radius}m)`;
+        telemetryPill.className = 'hud-chip';
+        telemetryPill.style.color = 'var(--neon-green)';
+        telemetryPill.innerText = 'INSIDE CAMPUS';
+
+        // Inside campus: automatically switch AP dropdown to first campus AP if it was none
+        if (document.getElementById('bssidSelect').value === 'none') {
+          document.getElementById('bssidSelect').selectedIndex = 0;
+          onBssidChanged();
+        }
+      } else {
+        distBadge.className = 'live-distance-badge dist-outside';
+        distBadge.innerText = `📍 ${distStr} • OUTSIDE CAMPUS (> ${selectedCollege.radius}m)`;
+        telemetryPill.className = 'hud-chip';
+        telemetryPill.style.color = 'var(--neon-amber)';
+        telemetryPill.innerText = 'OUTSIDE CAMPUS';
+
+        // Outside campus: set to disconnected and normal ringer
+        document.getElementById('bssidSelect').value = 'none';
+        onBssidChanged();
+      }
+    }
+
+    // Live Browser Network Telemetry
+    function updateNetworkTelemetry() {
+      let netInfo = "Online";
+      if (navigator.connection) {
+        const type = navigator.connection.effectiveType || "Wi-Fi";
+        const speed = navigator.connection.downlink || 10;
+        const rtt = navigator.connection.rtt || 30;
+        netInfo = `${type.toUpperCase()} • ${speed} Mbps • ${rtt}ms RTT`;
+      }
+      document.getElementById('phoneNetworkTelemetry').innerText = `📶 ${netInfo} • 🔋 98%`;
+      document.getElementById('ctrlNetworkStatus').innerText = netInfo;
+    }
+    window.addEventListener('online', updateNetworkTelemetry);
+    window.addEventListener('offline', () => {
+      document.getElementById('phoneNetworkTelemetry').innerText = `⚠️ Offline • 🔋 98%`;
+      document.getElementById('ctrlNetworkStatus').innerText = "Offline";
+    });
+    if (navigator.connection) {
+      navigator.connection.addEventListener('change', updateNetworkTelemetry);
+    }
+    updateNetworkTelemetry();
+
+    // 1. WI-FI FLOOR RESOLUTION & SURVEY TABLE
+    let bssidTable = {};
+
+    function renderSurveyTable() {
+      const container = document.getElementById('surveyTableRows');
+      container.innerHTML = '';
+      for (const [mac, info] of Object.entries(bssidTable)) {
+        if (mac === 'none') continue;
+        const row = document.createElement('div');
+        row.style.cssText = "display: grid; grid-template-columns: 120px 1fr 70px 70px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.03);";
+        const polColor = info.policy === 'SILENT' ? 'var(--neon-purple)' : (info.policy === 'VIBRATE' ? 'var(--neon-cyan)' : 'var(--neon-green)');
+        row.innerHTML = `
+          <span style="font-family: monospace; color: #cbd5e1;">${mac.substring(0, 11)}...</span>
+          <span>${info.name}</span>
+          <span style="color: var(--text-muted);">${info.floor}</span>
+          <span style="color: ${polColor}; font-weight: 700;">${info.policy}</span>
+        `;
+        container.appendChild(row);
+      }
+    }
+
+    function toggleAddApForm() {
+      const form = document.getElementById('addApForm');
+      form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function addNewApToSurvey() {
+      const bssid = document.getElementById('newBssid').value.trim();
+      const zoneName = document.getElementById('newZoneName').value.trim();
+      const floor = document.getElementById('newFloor').value.trim();
+      const policy = document.getElementById('newPolicy').value;
+
+      if (!bssid || !zoneName || !floor) {
+        alert("Please fill in BSSID, Zone Name, and Floor!");
+        return;
+      }
+
+      bssidTable[bssid] = { name: zoneName, floor: floor, policy: policy };
+
+      // Add to select dropdown
+      const select = document.getElementById('bssidSelect');
+      const opt = document.createElement('option');
+      opt.value = bssid;
+      opt.innerText = `${bssid} ➔ ${zoneName} (${policy})`;
+      select.insertBefore(opt, select.lastElementChild);
+      select.value = bssid;
+
+      renderSurveyTable();
+      toggleAddApForm();
+      document.getElementById('newBssid').value = '';
+      document.getElementById('newZoneName').value = '';
+      document.getElementById('newFloor').value = '';
+
+      addLog(`Added new AP survey mapping: ${bssid} ➔ ${zoneName}`);
+      onBssidChanged();
+    }
+
+    function onBssidChanged() {
+      const sel = document.getElementById('bssidSelect').value;
+      const zone = bssidTable[sel] || bssidTable["none"];
+      currentZone = zone;
+
+      // 0.5s smooth transition animation on phone hero card
+      const heroCard = document.querySelector('.device-hero-card');
+      heroCard.style.opacity = '0.3';
+      heroCard.style.transform = 'scale(0.98)';
+
+      setTimeout(() => {
+        document.getElementById('phoneZoneName').innerText = zone.name;
+        document.getElementById('phoneZoneFloor').innerText = `BSSID: ${sel} • ${zone.floor}`;
+        heroCard.style.opacity = '1';
+        heroCard.style.transform = 'scale(1)';
+
+        if (!isManualOverride) {
+          applyRinger(zone.policy, `Wi-Fi Floor Match: ${zone.name}`);
+        }
+        addLog(`Wi-Fi connected to ${sel} ➔ Resolved: ${zone.name} (${zone.policy})`);
+      }, 500);
+    }
+
+    function applyRinger(mode, reason) {
+      currentRinger = mode;
+      const badge = document.getElementById('phoneRingerBadge');
+      badge.className = 'status-badge badge-' + mode.toLowerCase();
+      badge.innerText = mode;
+
+      document.getElementById('phoneNotificationBanner').innerText = `Ringer set to ${mode} (${reason})`;
+      notifySmartwatch(`Silent Zone: ${mode}`, reason);
+      playChime(mode === 'SILENT' ? 330 : 523);
+    }
+
+    function toggleManualOverride() {
+      isManualOverride = !isManualOverride;
+      const btn = document.getElementById('manualOverrideBtn');
+      if (isManualOverride) {
+        btn.innerText = "Disable Manual Override";
+        applyRinger("NORMAL", "Manual Override Activated");
+        addLog("Manual override enabled by user.");
+      } else {
+        btn.innerText = "Toggle Manual Override";
+        applyRinger(currentZone.policy, "Resumed Auto Policy");
+        addLog("Manual override disabled. Resumed Wi-Fi policy.");
+      }
+    }
+
+    // 2. BREAK-GLASS SMS
+    let currentCallingContact = null;
+    const VIP_CONTACTS = ['Dad', 'Mom'];
+
+    function simulateIncomingCall(caller) {
+      currentCallingContact = caller;
+      document.getElementById('incomingCallerName').innerText = `${caller} ${VIP_CONTACTS.includes(caller) ? '(VIP)' : '(Non-VIP)'}`;
+      document.getElementById('incomingCallOverlay').style.display = 'flex';
+      addLog(`Incoming call received from: ${caller}`);
+    }
+
+    function endSimulatedCall() {
+      const isVip = VIP_CONTACTS.includes(currentCallingContact);
+      const callOverlay = document.getElementById('incomingCallOverlay');
+      
+      // Call ended animation
+      callOverlay.innerHTML = `
+        <div style="font-size: 2.5rem; margin-bottom: 10px;">📴</div>
+        <div style="font-size: 1.2rem; font-weight: 800;">Call Ended (Missed Call)</div>
+        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 6px;">Processing Smart Silent Zone rule...</div>
+      `;
+
+      setTimeout(() => {
+        callOverlay.style.display = 'none';
+        // Reset overlay markup for next time
+        callOverlay.innerHTML = `
+          <div style="font-size: 2.5rem; margin-bottom: 10px;">📞</div>
+          <div style="font-size: 1.2rem; font-weight: 800;" id="incomingCallerName">Caller</div>
+          <div style="font-size: 0.8rem; color: var(--neon-cyan); margin-top: 4px;">Incoming Call (Phone Silenced)</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 14px;">
+            Ringer silenced by Smart Silent Zone.<br>Auto-SMS trigger in progress...
+          </div>
+          <div style="margin-top: 20px; display: flex; gap: 10px;">
+            <button class="btn btn-danger" onclick="endSimulatedCall()">End Call (Trigger SMS)</button>
+          </div>
+        `;
+
+        if (isVip) {
+          const now = Date.now();
+          if (now - lastAutoSmsTimestamp < RATE_LIMIT_MS) {
+            const remainingSec = Math.ceil((RATE_LIMIT_MS - (now - lastAutoSmsTimestamp)) / 1000);
+            addLog(`Rate-limit prevented Auto-SMS to ${currentCallingContact}. (Wait ${remainingSec}s)`);
+            alert(`Rate-limited! You can send only 1 auto-reply per contact per 30 minutes. (Cooldown: ${remainingSec}s remaining)`);
+            return;
+          }
+
+          lastAutoSmsTimestamp = now;
+          startRateLimitCountdown();
+
+          const nowTime = new Date();
+          nowTime.setHours(nowTime.getHours() + 1);
+          const silenceUntil = nowTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+          const smsText = `"Hi ${currentCallingContact}, I'm in ${currentZone.name}. My phone is silenced until ${silenceUntil}. For an emergency, reply EMERGENCY."`;
+          document.getElementById('smsBubbleText').innerText = smsText;
+          document.getElementById('smsSentOverlay').style.display = 'flex';
+          addLog(`Sent Break-Glass Auto-SMS to ${currentCallingContact}: ${smsText}`);
+        } else {
+          addLog(`Call from ${currentCallingContact} ended. Non-VIP contact ➔ No auto-SMS sent.`);
+        }
+      }, 700);
+    }
+
+    function dismissSmsOverlay() {
+      document.getElementById('smsSentOverlay').style.display = 'none';
+    }
+
+    function startRateLimitCountdown() {
+      const badge = document.getElementById('rateLimitBadge');
+      let left = 60;
+      badge.style.color = "var(--neon-amber)";
+      badge.innerText = `RATE-LIMIT: ${left}s`;
+      const t = setInterval(() => {
+        left--;
+        badge.innerText = `RATE-LIMIT: ${left}s`;
+        if (left <= 0) {
+          clearInterval(t);
+          badge.style.color = "var(--neon-green)";
+          badge.innerText = `RATE-LIMIT: READY`;
+        }
+      }, 1000);
+    }
+
+    function sendDadSmsReply() {
+      const val = document.getElementById('dadSmsInput').value.trim();
+      addLog(`Received VIP SMS reply: "${val}"`);
+
+      if (val.toUpperCase() === 'EMERGENCY') {
+        // Trigger loud siren!
+        document.getElementById('phoneFrame').classList.add('emergency-flashing');
+        document.getElementById('emergencySirenOverlay').style.display = 'flex';
+        startLoudEmergencySiren();
+        notifySmartwatch("🚨 EMERGENCY ALARM!", "VIP triggered emergency override!");
+        addLog("🚨 CRITICAL: 'EMERGENCY' keyword received from VIP. Siren sounding at max volume!");
+      } else {
+        addLog(`Reply does not match 'EMERGENCY'. No alarm triggered.`);
+        alert(`VIP replied: "${val}". (Only keyword 'EMERGENCY' triggers the alarm)`);
+      }
+    }
+
+    function dismissEmergencySiren() {
+      stopEmergencySiren();
+      document.getElementById('phoneFrame').classList.remove('emergency-flashing');
+      document.getElementById('emergencySirenOverlay').style.display = 'none';
+      addLog("Emergency alarm dismissed by user.");
+    }
+
+    // 3. FLIP-TO-SHHH SENSOR FUSION
+    let flipTimer = null;
+    let isMobileMotionActive = false;
+
+    function onSensorSlide() {
+      const prox = parseFloat(document.getElementById('sliderProx').value);
+      const lux = parseFloat(document.getElementById('sliderLux').value);
+      const tilt = parseFloat(document.getElementById('sliderTilt').value);
+
+      document.getElementById('valProx').innerText = `${prox} cm`;
+      document.getElementById('valLux').innerText = `${lux} lux`;
+      document.getElementById('valTilt').innerText = `${tilt >= 0 ? '+' : ''}${tilt.toFixed(1)} m/s²`;
+
+      // Condition: Proximity == 0 cm, Ambient light < 5 lux, Tilt Z <= -9.0 m/s²
+      if (prox === 0 && lux < 5 && tilt <= -9.0) {
+        document.getElementById('flipStatusText').innerText = "Holding Face Down (1s)...";
+        if (!flipTimer) {
+          flipTimer = setTimeout(() => {
+            document.getElementById('flipStatusText').innerText = "FLIPPED FACE-DOWN (SILENCED)";
+            document.getElementById('flipStatusIcon').innerText = "🤫";
+            applyRinger("SILENT", "Flip-to-Shhh Triggered");
+            addLog("Flip-to-Shhh: Proximity 0cm, <5 lux, -9.8 m/s² held 1s ➔ Phone Silenced.");
+          }, 1000);
+        }
+      } else {
+        if (flipTimer) {
+          clearTimeout(flipTimer);
+          flipTimer = null;
+        }
+        document.getElementById('flipStatusText').innerText = "Screen Face Up (Idle)";
+        document.getElementById('flipStatusIcon').innerText = "📱";
+        if (currentRinger === 'SILENT' && !isManualOverride && currentZone.policy !== 'SILENT') {
+          applyRinger(currentZone.policy, "Phone Picked Up (Face Up)");
+        }
+      }
+    }
+
+    function triggerFlipPreset() {
+      document.getElementById('sliderProx').value = 0;
+      document.getElementById('sliderLux').value = 0;
+      document.getElementById('sliderTilt').value = -9.8;
+      onSensorSlide();
+    }
+
+    function resetFlipPreset() {
+      document.getElementById('sliderProx').value = 5;
+      document.getElementById('sliderLux').value = 180;
+      document.getElementById('sliderTilt').value = 9.8;
+      onSensorSlide();
+    }
+
+    function enableMobileMotion() {
+      if (window.DeviceMotionEvent) {
+        if (typeof DeviceMotionEvent.requestPermission === 'function') {
+          DeviceMotionEvent.requestPermission().then(permissionState => {
+            if (permissionState === 'granted') {
+              window.addEventListener('devicemotion', handleMotion);
+              document.getElementById('mobileMotionBtn').innerText = "Motion Active";
+            }
+          });
+        } else {
+          window.addEventListener('devicemotion', handleMotion);
+          document.getElementById('mobileMotionBtn').innerText = "Motion Active";
+        }
+      } else {
+        alert("DeviceMotionEvent not supported on this device/browser.");
+      }
+    }
+
+    function handleMotion(e) {
+      if (e.accelerationIncludingGravity && e.accelerationIncludingGravity.z !== null) {
+        const z = e.accelerationIncludingGravity.z;
+        document.getElementById('sliderTilt').value = z.toFixed(1);
+        onSensorSlide();
+      }
+    }
+
+    // 4. SMARTWATCH SYNC
+    function notifySmartwatch(title, text) {
+      const watch = document.getElementById('smartwatchEl');
+      document.getElementById('watchNotifText').innerText = `${title}: ${text}`;
+      watch.classList.add('watch-vibrating');
+      if ('vibrate' in navigator) navigator.vibrate(200);
+
+      setTimeout(() => {
+        watch.classList.remove('watch-vibrating');
+      }, 1200);
+    }
+
+    // 5. CAMPUS SILENCE HEATMAP
+    const hCanvas = document.getElementById('heatmapCanvas');
+    const hCtx = hCanvas.getContext('2d');
+    function resizeHeatmap() {
+      hCanvas.width = hCanvas.parentElement.clientWidth - 40;
+      hCanvas.height = 200;
+    }
+    window.addEventListener('resize', resizeHeatmap);
+    resizeHeatmap();
+
+    let campusZones = [
+      { name: "Library", x: 70, y: 100, db: 28 },
+      { name: "CSE Lab", x: 190, y: 70, db: 46 },
+      { name: "Classrooms", x: 300, y: 90, db: 52 },
+      { name: "Exam Hall", x: 130, y: 150, db: 32 },
+      { name: "Canteen", x: 260, y: 150, db: 76 }
+    ];
+
+    let liveMicDb = 35;
+    let isRealMicActive = false;
+
+    async function toggleMicrophone() {
+      if (!isRealMicActive) {
+        try {
+          initAudio();
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const source = audioCtx.createMediaStreamSource(stream);
+          const analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 64;
+          source.connect(analyser);
+          const data = new Uint8Array(analyser.frequencyBinCount);
+          isRealMicActive = true;
+          document.getElementById('micBtn').innerText = "🔴 Mic Active";
+
+          setInterval(() => {
+            if (isRealMicActive) {
+              analyser.getByteFrequencyData(data);
+              let sum = 0;
+              for (let i = 0; i < data.length; i++) sum += data[i];
+              liveMicDb = Math.floor(25 + (sum / data.length) * 0.45);
+              campusZones[0].db = liveMicDb; // Link library/current zone to mic
+            }
+          }, 200);
+        } catch(e) {
+          alert("Mic access denied. Simulation running.");
+        }
+      } else {
+        isRealMicActive = false;
+        document.getElementById('micBtn').innerText = "🎙️ Use My Mic";
+      }
+    }
+
+    function renderHeatmap() {
+      hCtx.clearRect(0, 0, hCanvas.width, hCanvas.height);
+
+      campusZones.forEach(z => {
+        // Random slight drift
+        const currentDb = z.db + (Math.sin(Date.now() / 800 + z.x) * 2);
+        let color = "rgba(0, 230, 118, 0.4)"; // green <40
+        let strokeColor = "#00e676";
+        if (currentDb >= 40 && currentDb <= 60) {
+          color = "rgba(255, 171, 0, 0.4)"; // amber
+          strokeColor = "#ffab00";
+        } else if (currentDb > 60) {
+          color = "rgba(255, 82, 82, 0.4)"; // red
+          strokeColor = "#ff5252";
+        }
+
+        hCtx.beginPath();
+        hCtx.arc(z.x, z.y, 42, 0, Math.PI * 2);
+        hCtx.fillStyle = color;
+        hCtx.fill();
+        hCtx.strokeStyle = strokeColor;
+        hCtx.lineWidth = 1.5;
+        hCtx.stroke();
+
+        hCtx.fillStyle = "#fff";
+        hCtx.font = "bold 10px Plus Jakarta Sans";
+        hCtx.textAlign = "center";
+        hCtx.fillText(z.name, z.x, z.y - 4);
+        hCtx.font = "9px JetBrains Mono";
+        hCtx.fillStyle = strokeColor;
+        hCtx.fillText(`${Math.round(currentDb)} dB`, z.x, z.y + 12);
+      });
+
+      // Update phone bouncing visualizer bars
+      const eqContainer = document.getElementById('phoneEqualizerBars');
+      if (eqContainer && eqContainer.children.length > 0) {
+        const primaryDb = campusZones[0] ? campusZones[0].db : liveMicDb;
+        const dispDb = Math.round(primaryDb + (Math.sin(Date.now() / 400) * 3));
+        const color = dispDb > 70 ? 'var(--neon-red)' : (dispDb > 50 ? 'var(--neon-amber)' : 'var(--neon-green)');
+        const statusText = dispDb > 70 ? 'Chaotic' : (dispDb > 50 ? 'Moderate' : 'Quiet');
+        const decValEl = document.getElementById('phoneDecibelVal');
+        if (decValEl) {
+          decValEl.innerText = `${dispDb} dB (${statusText})`;
+          decValEl.style.color = color;
+        }
+        for (let i = 0; i < eqContainer.children.length; i++) {
+          const bar = eqContainer.children[i];
+          const bounce = Math.abs(Math.sin((Date.now() / 250) + (i * 0.8)));
+          const h = Math.max(15, Math.min(100, Math.round(bounce * (dispDb / 75) * 100)));
+          bar.style.height = `${h}%`;
+          bar.style.background = color;
+        }
+      }
+
+      requestAnimationFrame(renderHeatmap);
+    }
+    renderHeatmap();
+
+    function clearLogs() {
+      document.getElementById('logBox').innerHTML = '';
+      addLog("Event log cleared.");
+    }
+
+    // Initialize College selection & survey table
+    initCollegeDropdowns();
+    renderSurveyTable();
+    onBssidChanged();
+  </script>
+</body>
+</html>

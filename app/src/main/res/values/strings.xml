@@ -1,0 +1,35 @@
+<resources>
+    <string name="app_name">Smart Silent Zone</string>
+    <string name="full_app_name">Smart Silent Zone Assistant</string>
+    <string name="app_tagline">Automatically manage your phone sound mode based on your location.</string>
+
+    <!-- Navigation Labels -->
+    <string name="nav_home">Home</string>
+    <string name="nav_blocks">My Blocks</string>
+    <string name="nav_timetable">Timetable</string>
+    <string name="nav_history">History</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Onboarding Screens -->
+    <string name="onboarding_title_1">Welcome to BlockSilent</string>
+    <string name="onboarding_desc_1">Never worry about your phone ringing during lectures, exams, or library study hours again.</string>
+
+    <string name="onboarding_title_2">Smart Geofencing</string>
+    <string name="onboarding_desc_2">Automatically detects when you enter college blocks and switches to Silent or Vibrate mode seamlessly.</string>
+
+    <string name="onboarding_title_3">Location Permission</string>
+    <string name="onboarding_desc_3">BlockSilent processes your location locally on your device to trigger geofences without sharing data externally.</string>
+
+    <string name="onboarding_title_4">Sound Mode Automation</string>
+    <string name="onboarding_desc_4">When leaving a location, BlockSilent automatically restores your previous sound mode settings.</string>
+
+    <string name="onboarding_title_5">Battery &amp; Privacy First</string>
+    <string name="onboarding_desc_5">Optimized with native Android Geofencing APIs to ensure minimal battery usage and 100% data privacy.</string>
+
+    <string name="get_started">Get Started</string>
+    <string name="next">Next</string>
+    <string name="skip">Skip</string>
+
+    <!-- Privacy Disclaimer -->
+    <string name="privacy_statement">The application uses location information only to detect whether the user has entered or exited configured college areas. Location data is processed locally on the device and is never shared with external servers.</string>
+</resources>
